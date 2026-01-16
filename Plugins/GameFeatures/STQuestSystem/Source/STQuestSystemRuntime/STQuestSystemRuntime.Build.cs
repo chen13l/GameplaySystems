@@ -43,6 +43,7 @@ public class STQuestSystemRuntime : ModuleRules
 				"GameFeatures",
 				"ModularGameplay",
 				"EnhancedInput",
+				"UMG",
 				"InputSettingsRuntime"
 				// ... add private dependencies that you statically link with here ...	
 			}
