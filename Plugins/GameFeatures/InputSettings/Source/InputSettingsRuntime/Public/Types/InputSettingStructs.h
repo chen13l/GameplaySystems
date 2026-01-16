@@ -2,15 +2,14 @@
 
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
-#include "STQStructs.generated.h"
+#include "InputSettingStructs.generated.h"
 
 UENUM(BlueprintType, Category="Extra Actions | Enums")
 enum class EInputBindingOwnerOverride :uint8
 {
 	Default,
 	Pawn,
-	Controller,
-	Component
+	Controller
 };
 
 USTRUCT(BlueprintType, Category = "Extra Actions | Modular Structs")

@@ -2,7 +2,7 @@
 
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
-#include "Libs/STQFuncLib.h"
+#include "Libs/UInputSettingFuncLib.h"
 
 void UGameFeatureAction_AddInputs::OnGameFeatureActivating(FGameFeatureActivatingContext& Context)
 {
@@ -124,12 +124,15 @@ bool UGameFeatureAction_AddInputs::IsActorHasAllRequiredTags(const AActor* Targe
 
 void UGameFeatureAction_AddInputs::AddActorInputs(AActor* TargetActor)
 {
-	if (USTQFuncLib::AddActorInputs(TargetActor, InputActionSettings))
+	TArray<FInputBindingHandle> InputBindingHandles = UInputSettingFuncLib::AddActorInputs(TargetActor, InputActionSettings);
+	if (InputBindingHandles.Num()>0)
 	{
 		// get or create input data associated to the target actor
 		FInputBindingData& NewInputData = ActiveExtensions.FindOrAdd(TargetActor);
 		// Add the mapping context to the input data
 		NewInputData.Mapping = InputActionSettings.InputMappingContext.LoadSynchronous();
+
+		NewInputData.ActionBindingHandle.Append(InputBindingHandles);
 	}
 }
 
@@ -152,17 +155,8 @@ void UGameFeatureAction_AddInputs::RemoveActorInputs(AActor* TargetActor)
 	if (const FInputBindingData* const ActiveInputData = ActiveExtensions.Find(TargetActor))
 	{
 		const auto& [TargetHandles,TargetMapping] = ActiveExtensions[TargetActor];
-		USTQFuncLib::RemoveActorInputs(TargetActor, TargetHandles, TargetMapping.Get());
+		UInputSettingFuncLib::RemoveActorInputs(TargetActor, TargetHandles, TargetMapping.Get());
 	}
 	
 	ActiveExtensions.Remove(TargetActor);
-}
-
-void UGameFeatureAction_AddInputs::SetupActionBindings(AActor* TargetActor, UObject* FunctionOwner, UEnhancedInputComponent* InputComponent)
-{
-	// Get the existing input data
-	FInputBindingData& NewInputData = ActiveExtensions.FindOrAdd(TargetActor);
-
-	TArray<FInputBindingHandle> BindingHandles = USTQFuncLib::SetupInputBindings(TargetActor,FunctionOwner,InputActionSettings);
-	NewInputData.ActionBindingHandle.Append(BindingHandles);
 }

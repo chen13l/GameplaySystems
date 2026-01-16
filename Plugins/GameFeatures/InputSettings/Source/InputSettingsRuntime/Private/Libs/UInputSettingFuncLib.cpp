@@ -1,6 +1,6 @@
-﻿#include "Libs/STQFuncLib.h"
+﻿#include "Libs/UInputSettingFuncLib.h"
 
-UEnhancedInputLocalPlayerSubsystem* USTQFuncLib::GetEnhancedInputSubSystemFromActor(AActor* TargetActor)
+UEnhancedInputLocalPlayerSubsystem* UInputSettingFuncLib::GetEnhancedInputSubSystemFromActor(AActor* TargetActor)
 {
 	APawn* TargetPawn = Cast<APawn>(TargetActor);
 	if (!IsValid(TargetPawn)) { return nullptr; }
@@ -28,7 +28,7 @@ UEnhancedInputLocalPlayerSubsystem* USTQFuncLib::GetEnhancedInputSubSystemFromAc
 	return nullptr;
 }
 
-UEnhancedInputComponent* USTQFuncLib::GetInputComponentFromActor(AActor* TargetActor)
+UEnhancedInputComponent* UInputSettingFuncLib::GetInputComponentFromActor(AActor* TargetActor)
 {
 	APawn* TargetPawn = Cast<APawn>(TargetActor);
 	if (!IsValid(TargetPawn)) { return nullptr; }
@@ -36,16 +36,16 @@ UEnhancedInputComponent* USTQFuncLib::GetInputComponentFromActor(AActor* TargetA
 	return Cast<UEnhancedInputComponent>(TargetPawn->GetController()->InputComponent.Get());
 }
 
-UObject* USTQFuncLib::GetInputOwnerObject(UObject* InObject, const EInputBindingOwnerOverride& InOwner)
+UObject* UInputSettingFuncLib::GetInputOwnerObject(UObject* InObject, const EInputBindingOwnerOverride& InOwner)
 {
 	if (!IsValid(InObject)) { return nullptr; }
 
 	switch (InOwner)
 	{
 	case EInputBindingOwnerOverride::Default:
-		break;
-	case EInputBindingOwnerOverride::Pawn:
 		return InObject;
+	case EInputBindingOwnerOverride::Pawn:
+		return Cast<APawn>(InObject);
 	case EInputBindingOwnerOverride::Controller:
 		if (APawn* InPawn = Cast<APawn>(InObject))
 		{
@@ -53,18 +53,24 @@ UObject* USTQFuncLib::GetInputOwnerObject(UObject* InObject, const EInputBinding
 		}
 		UE_LOG(LogTemp, Error, TEXT("%s's controller - Invalid InputBinding Owner."), *InObject->GetName());
 		return nullptr;
-	case EInputBindingOwnerOverride::Component:
-		return InObject;
 	}
 
 	return nullptr;
 }
 
-bool USTQFuncLib::AddActorInputs(AActor* TargetActor, const FInputActionSettings& ActionSettings)
+TArray<FInputBindingHandle> UInputSettingFuncLib::AddActorInputs(AActor* TargetActor, const FInputActionSettings& ActionSettings)
 {
+	return AddActorInputs(TargetActor, GetInputOwnerObject(TargetActor, ActionSettings.InputBindingOwner), ActionSettings);
+}
+
+TArray<FInputBindingHandle> UInputSettingFuncLib::AddActorInputs(AActor* TargetActor, UObject* BoundFuncSource,
+                                                                 const FInputActionSettings& ActionSettings)
+{
+	TArray<FInputBindingHandle> OutHandles;
+
 	APawn* const TargetPawn = Cast<APawn>(TargetActor);
 	// only add inputs to valid pawn
-	if (!IsValid(TargetActor) || !IsValid(TargetPawn)) { return false; }
+	if (!IsValid(TargetActor) || !IsValid(TargetPawn)) { return OutHandles; }
 
 	if (UEnhancedInputLocalPlayerSubsystem* const Subsystem = GetEnhancedInputSubSystemFromActor(TargetPawn))
 	{
@@ -77,13 +83,11 @@ bool USTQFuncLib::AddActorInputs(AActor* TargetActor, const FInputActionSettings
 		// Add the loaded mapping context into the enhanced input subsystem
 		Subsystem->AddMappingContext(InputMapping, ActionSettings.MappingPriority);
 
-		// Get the UObject which owns the specified UFunction that will be used to bind the input
-		const TWeakObjectPtr<UObject> FunctionOwner = GetInputOwnerObject(TargetPawn, ActionSettings.InputBindingOwner);
-		if (!FunctionOwner.IsValid())
+		if (!IsValid(BoundFuncSource))
 		{
 			UE_LOG(LogTemp, Error, TEXT("%s: Failed to get the function owner using the Actor %s."),
 			       *FString(__FUNCTION__), *TargetActor->GetName());
-			return false;
+			return OutHandles;
 		}
 
 		// Get the Enhanced Input component of the target Pawn and check 
@@ -93,24 +97,23 @@ bool USTQFuncLib::AddActorInputs(AActor* TargetActor, const FInputActionSettings
 		{
 			UE_LOG(LogTemp, Error, TEXT("%s: Failed to find InputComponent on Actor %s."), *FString(__FUNCTION__),
 			       *TargetActor->GetName());
-			return false;
+			return OutHandles;
 		}
 
 		// setup the action bindings and add the extension to the active map
-		SetupInputBindings(TargetActor, FunctionOwner.Get(), ActionSettings);
-
-		return true;
+		SetupInputBindings(TargetActor, BoundFuncSource, ActionSettings);
 	}
 	else if (TargetPawn->IsPawnControlled())
 	{
 		UE_LOG(LogTemp, Error, TEXT("%s: Failed to find PlayerController on Actor %s."), *FString(__FUNCTION__),
 		       *TargetActor->GetName());
 	}
-	return false;
+
+	return OutHandles;
 }
 
-bool USTQFuncLib::RemoveActorInputs(AActor* TargetActor, const TArray<FInputBindingHandle>& BindingHandles,
-                                    const UInputMappingContext* MappingContext)
+bool UInputSettingFuncLib::RemoveActorInputs(AActor* TargetActor, const TArray<FInputBindingHandle>& BindingHandles,
+                                             const UInputMappingContext* MappingContext)
 {
 	bool bRemoveActionSucceeded = true;
 
@@ -146,7 +149,8 @@ bool USTQFuncLib::RemoveActorInputs(AActor* TargetActor, const TArray<FInputBind
 	return bRemoveActionSucceeded;
 }
 
-TArray<FInputBindingHandle> USTQFuncLib::SetupInputBindings(AActor* InActor, UObject* FunctionOwner, const FInputActionSettings& ActionSettings)
+TArray<FInputBindingHandle> UInputSettingFuncLib::SetupInputBindings(AActor* InActor, UObject* FunctionOwner,
+                                                                     const FInputActionSettings& ActionSettings)
 {
 	TArray<FInputBindingHandle> OutArr;
 

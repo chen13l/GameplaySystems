@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class STQuestSystemRuntime : ModuleRules
+public class InputSettingsRuntime : ModuleRules
 {
-	public STQuestSystemRuntime(ReadOnlyTargetRules Target) : base(Target)
+	public InputSettingsRuntime(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
@@ -25,7 +25,7 @@ public class STQuestSystemRuntime : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core", 
+				"Core",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -38,12 +38,9 @@ public class STQuestSystemRuntime : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"StateTreeModule",
-				"GameplayStateTreeModule",
 				"GameFeatures",
 				"ModularGameplay",
 				"EnhancedInput",
-				"InputSettingsRuntime"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

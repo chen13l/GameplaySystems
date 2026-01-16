@@ -5,7 +5,7 @@
 #include "GameFeatureAction.h"
 #include "GameFeaturesSubsystem.h"
 #include "Components/GameFrameworkComponentManager.h"
-#include "Types/STQStructs.h"
+#include "Types/InputSettingStructs.h"
 #include "GameFeatureAction_AddInputs.generated.h"
 
 class UInputMappingContext;
@@ -13,7 +13,7 @@ class UEnhancedInputLocalPlayerSubsystem;
 struct FComponentRequestHandle;
 
 UCLASS(BlueprintType, meta=(DisplayName="Add Inputs"))
-class STQUESTSYSTEMRUNTIME_API UGameFeatureAction_AddInputs : public UGameFeatureAction
+class INPUTSETTINGSRUNTIME_API UGameFeatureAction_AddInputs : public UGameFeatureAction
 {
 	GENERATED_BODY()
 
@@ -42,7 +42,5 @@ private:
 	void AddActorInputs(AActor* TargetActor);
 	void RemoveActorInputs(AActor* TargetActor);
 
-	void SetupActionBindings(AActor* TargetActor, UObject* FunctionOwner, UEnhancedInputComponent* InputComponent);
-	
 	TMap<TWeakObjectPtr<AActor>, FInputBindingData> ActiveExtensions;
 };
